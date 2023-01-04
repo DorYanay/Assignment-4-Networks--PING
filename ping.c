@@ -1,4 +1,5 @@
-#include <stdbool.h>
+
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <netinet/in.h>
@@ -16,22 +17,25 @@
 #define IP4_HDRLEN 20
 
 // ICMP header len for echo req
-#define ICMP_HDRLEN 45
-#define BYTETOSEND 64
+#define ICMP_HDRLEN 8
 
 // Checksum algo
 unsigned short calculate_checksum(unsigned short *paddress, int len);
 
 int main(int argc, char *argv[])
 {
+    int cnt = 0;
     int sock = -1;
-    struct icmp icmphdr; // ICMP-header
-
-    // Sequence Number (16 bits): starts at 0
-    icmphdr.icmp_seq = 0;
-
+    if ((sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) == -1)
+    {
+        fprintf(stderr, "socket() failed with error: %d", errno);
+        fprintf(stderr, "To create a raw socket, the process needs to be run by Admin/root user.\n\n");
+        return -1;
+    }
     while (1)
     {
+
+        struct icmp icmphdr; // ICMP-header
         char data[IP_MAXPACKET] = "This is the ping.\n";
 
         int datalen = strlen(data) + 1;
@@ -50,6 +54,9 @@ int main(int argc, char *argv[])
         // It will be copied to the response packet and used to map response to the request sent earlier.
         // Thus, it serves as a Transaction-ID when we need to make "ping"
         icmphdr.icmp_id = 18;
+
+        // Sequence Number (16 bits): starts at 0
+        icmphdr.icmp_seq = cnt;
 
         // ICMP header checksum (16 bits): set to 0 not to include into checksum calculation
         icmphdr.icmp_cksum = 0;
@@ -78,15 +85,7 @@ int main(int argc, char *argv[])
 
         // Create raw socket for IP-RAW (make IP-header by yourself)
 
-        if ((sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) == -1)
-        {
-            fprintf(stderr, "socket() failed with error: %d", errno);
-            fprintf(stderr, "To create a raw socket, the process needs to be run by Admin/root user.\n\n");
-            return -1;
-        }
-
         struct timeval start, end;
-
         gettimeofday(&start, 0);
 
         // Send the packet using sendto() for sending datagrams.
@@ -101,16 +100,18 @@ int main(int argc, char *argv[])
         bzero(packet, IP_MAXPACKET);
         socklen_t len = sizeof(dest_in);
         ssize_t bytes_received = -1;
-        while ((bytes_received = recvfrom(sock, packet, sizeof(packet), 0, (struct sockaddr *)&dest_in, &len)))
+        bytes_received = recvfrom(sock, packet, sizeof(packet), 0, (struct sockaddr *)&dest_in, &len);
+
+        if (bytes_received > 0)
         {
-            if (bytes_received > 0)
-            {
-                // Check the IP header
-                struct iphdr *iphdr = (struct iphdr *)packet;
-                struct icmphdr *icmphdr = (struct icmphdr *)(packet + (iphdr->ihl * 4));
-                break;
-            }
+            // Check the IP header
+            struct iphdr *iphdr = (struct iphdr *)packet;
+            struct icmphdr *icmphdr = (struct icmphdr *)(packet + (iphdr->ihl * 4));
+            char srcIPADDR[32] = {'\0'};
+            inet_ntop(AF_INET, &iphdr->saddr, srcIPADDR, sizeof(srcIPADDR));
+            printf("response from %s: icmp_seq=%d ttl = %hhu ", srcIPADDR, icmphdr->un.echo.sequence, iphdr->ttl);
         }
+
         gettimeofday(&end, 0);
 
         char reply[IP_MAXPACKET];
@@ -119,9 +120,8 @@ int main(int argc, char *argv[])
 
         float milliseconds = (end.tv_sec - start.tv_sec) * 1000.0f + (end.tv_usec - start.tv_usec) / 1000.0f;
         unsigned long microseconds = (end.tv_sec - start.tv_sec) * 1000.0f + (end.tv_usec - start.tv_usec);
-        // printf("\nRTT: %f milliseconds (%ld microseconds)\n", milliseconds, microseconds);
-        // icmphdr.icmp_seq++;
-        printf("response %d bytes from %s: icmp_seq=%d RTT=%f ms\n", bytes_sent, argv[1], icmphdr.icmp_seq++, milliseconds);
+        printf("RTT=%f ms\n", milliseconds);
+        cnt++;
         sleep(1);
     }
     // Close the raw socket descriptor.
