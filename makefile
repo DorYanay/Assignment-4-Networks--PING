@@ -1,18 +1,10 @@
-# Makefile for PING project
-
-all: ping
-
+all: ping watchdog new_ping
 ping: ping.c
-	gcc -o a.out ping.c
+	gcc ping.c -o parta
+watchdog: watchdog.c
+	gcc watchdog.c -o watchdog
+new_ping: new_ping.c
+	gcc new_ping.c -o partb
 
-
-
-
-runp:
-	./a.out
-
-
-runs-strace:
-	strace -f ./a.out
-
-
+clean:
+	rm -f *.o parta watchdog partb

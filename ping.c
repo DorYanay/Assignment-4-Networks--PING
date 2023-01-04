@@ -1,9 +1,4 @@
-// icmp.cpp
-// Robert Iakobashvili for Ariel uni, license BSD/MIT/Apache
-//
-// Sending ICMP Echo Requests using Raw-sockets.
-//
-
+#include <stdbool.h>
 #include <arpa/inet.h>
 #include <errno.h>
 #include <netinet/in.h>
@@ -21,7 +16,7 @@
 #define IP4_HDRLEN 20
 
 // ICMP header len for echo req
-#define ICMP_HDRLEN 8
+#define ICMP_HDRLEN 45
 #define BYTETOSEND 64
 
 // Checksum algo
@@ -125,8 +120,8 @@ int main(int argc, char *argv[])
         float milliseconds = (end.tv_sec - start.tv_sec) * 1000.0f + (end.tv_usec - start.tv_usec) / 1000.0f;
         unsigned long microseconds = (end.tv_sec - start.tv_sec) * 1000.0f + (end.tv_usec - start.tv_usec);
         // printf("\nRTT: %f milliseconds (%ld microseconds)\n", milliseconds, microseconds);
-        icmphdr.icmp_seq++;
-        printf("%d bytes from %s: icmp_seq=%d time=%f ms\n", bytes_sent, argv[1], icmphdr.icmp_seq, milliseconds);
+        // icmphdr.icmp_seq++;
+        printf("response %d bytes from %s: icmp_seq=%d RTT=%f ms\n", bytes_sent, argv[1], icmphdr.icmp_seq++, milliseconds);
         sleep(1);
     }
     // Close the raw socket descriptor.
