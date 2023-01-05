@@ -35,15 +35,17 @@ int main(int argc, char *argv[])
         fprintf(stderr, "To create a raw socket, the process needs to be run by Admin/root user.\n\n");
         return -1;
     }
-
+    char *args[2];
+    args[0] = "./watchdog";
+    args[1] = NULL;
     //    Watchdog forking
     pid_t watchdogpid;
     watchdogpid = fork();
     if (watchdogpid == 0)
     {
-        char *watchdog_path = "./watchdog.out"; // assumes .watchdog.out is compiled
+        char *watchdog_path = "./watchdog"; // assumes .watchdog.out is compiled
         // runs the watchdog.out file
-        execvp(watchdog_path, NULL);
+        execvp(watchdog_path, args);
     }
     // sleep for one second allowing watchdog to turn on listeningSocket
     sleep(1);
@@ -73,7 +75,6 @@ int main(int argc, char *argv[])
     }
     printf("connected to watchdog.\n");
     fcntl(watchdog_socket, F_SETFL, O_NONBLOCK); // Change the socket into non-blocking state
-
     while (1)
     {
         struct icmp icmphdr; // ICMP-header
@@ -134,7 +135,7 @@ int main(int argc, char *argv[])
 
         if (bytes_sent == -1)
         {
-            printf(stderr, "sendto() failed with error: %d", errno);
+            fprintf(stderr, "sendto() failed with error: %d", errno);
             return -1;
         }
 

@@ -33,7 +33,6 @@ int main(int argc, char *argv[])
     }
     while (1)
     {
-
         struct icmp icmphdr; // ICMP-header
         char data[IP_MAXPACKET] = "This is the ping.\n";
 
