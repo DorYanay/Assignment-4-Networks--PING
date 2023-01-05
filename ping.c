@@ -1,5 +1,4 @@
-
-
+// command: make clean && make all && ./parta
 #include <arpa/inet.h>
 #include <errno.h>
 #include <netinet/in.h>
@@ -79,12 +78,10 @@ int main(int argc, char *argv[])
         dest_in.sin_family = AF_INET;
 
         // The port is irrelant for Networking and therefore was zeroed.
-        // dest_in.sin_addr.s_addr = iphdr.ip_dst.s_addr;
         dest_in.sin_addr.s_addr = inet_addr(argv[1]);
-        // inet_pton(AF_INET, DESTINATION_IP, &(dest_in.sin_addr.s_addr));
 
         // Create raw socket for IP-RAW (make IP-header by yourself)
-
+        // timestruct for time measuring of the REPLY
         struct timeval start, end;
         gettimeofday(&start, 0);
 
@@ -109,7 +106,7 @@ int main(int argc, char *argv[])
             struct icmphdr *icmphdr = (struct icmphdr *)(packet + (iphdr->ihl * 4));
             char srcIPADDR[32] = {'\0'};
             inet_ntop(AF_INET, &iphdr->saddr, srcIPADDR, sizeof(srcIPADDR));
-            printf("response from %s: icmp_seq=%d ttl = %hhu ", srcIPADDR, icmphdr->un.echo.sequence, iphdr->ttl);
+            printf("response from %s: icmp_seq=%d ", srcIPADDR, icmphdr->un.echo.sequence);
         }
 
         gettimeofday(&end, 0);
